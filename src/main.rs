@@ -17,68 +17,60 @@ struct Renderable {
     background: RGB,
 }
 
-#[derive(Component)]
-struct LeftMover {}
+#[derive(Component, Debug)]
+struct Player {}
+
+#[derive(PartialEq, Copy, Clone)]
+enum TileType {
+    Wall,
+    Floor,
+}
 
 struct State {
     ecs: World,
 }
-impl GameState for State {
-    fn tick(&mut self, context: &mut Rltk) {
-        context.cls();
 
-        player_input(self, context);
-        self.run_system();
-
-        let positions = self.ecs.read_storage::<Position>();
-        let renderables = self.ecs.read_storage::<Renderable>();
-
-        for (pos, render) in (&positions, &renderables).join() {
-            context.set(
-                pos.x,
-                pos.y,
-                render.foreground,
-                render.background,
-                render.glyph,
-            );
-        }
-        // ctx.print(1, 1, "Hello RogueLikeToolKit!");
-    }
+pub fn xy_idx(x: i32, y: i32) -> usize {
+    (y as usize * 80) + x as usize
 }
 
-struct LeftWalker {}
+fn new_map() -> Vec<TileType> {
+    let mut map = vec![TileType::Floor; 80 * 50];
 
-impl<'a> System<'a> for LeftWalker {
-    type SystemData = (ReadStorage<'a, LeftMover>, WriteStorage<'a, Position>);
+    for x in 0..80 {
+        map[xy_idx(x, 0)] = TileType::Wall;
+        map[xy_idx(x, 49)] = TileType::Wall;
+    }
+    for y in 0..50 {
+        map[xy_idx(0, y)] = TileType::Wall;
+        map[xy_idx(79, y)] = TileType::Wall;
+    }
 
-    fn run(&mut self, (lefty, mut pos): Self::SystemData) {
-        for (_lefty, pos) in (&lefty, &mut pos).join() {
-            pos.x -= 1;
-            if pos.x < 0 {
-                pos.x = 79
-            }
+    let mut rng = rltk::RandomNumberGenerator::new();
+
+    for _i in 0..400 {
+        let x = rng.roll_dice(1, 79);
+        let y = rng.roll_dice(1, 49);
+        let idx = xy_idx(x, y);
+        if idx != xy_idx(40, 25) {
+            map[idx] = TileType::Wall;
         }
     }
-}
 
-#[derive(Component, Debug)]
-struct Player {}
-
-impl State {
-    fn run_system(&mut self) {
-        let mut left_walker = LeftWalker {};
-        left_walker.run_now(&self.ecs);
-        self.ecs.maintain();
-    }
+    map
 }
 
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
     let mut players = ecs.write_storage::<Player>();
+    let map = ecs.fetch::<Vec<TileType>>();
 
     for (_player, pos) in (&mut players, &mut positions).join() {
-        pos.x = min(79, max(0, pos.x + delta_x));
-        pos.y = min(49, max(0, pos.y + delta_y));
+        let destination_idx = xy_idx(pos.x + delta_x, pos.y + delta_y);
+        if map[destination_idx] != TileType::Wall {
+            pos.x = min(79, max(0, pos.x + delta_x));
+            pos.y = min(49, max(0, pos.y + delta_y));
+        }
     }
 }
 
@@ -95,6 +87,66 @@ fn player_input(game_state: &mut State, context: &mut Rltk) {
     }
 }
 
+fn draw_map(map: &[TileType], context: &mut Rltk) {
+    let mut y = 0;
+    let mut x = 0;
+    for tile in map.iter() {
+        match tile {
+            TileType::Floor => context.set(
+                x,
+                y,
+                RGB::from_f32(0.5, 0.5, 0.5),
+                RGB::from_f32(0., 0., 0.),
+                rltk::to_cp437('.'),
+            ),
+            TileType::Wall => context.set(
+                x,
+                y,
+                RGB::from_f32(0.0, 1.0, 0.0),
+                RGB::from_f32(0., 0., 0.),
+                rltk::to_cp437('#'),
+            ),
+        }
+
+        x += 1;
+        if x > 79 {
+            x = 0;
+            y += 1;
+        }
+    }
+}
+
+impl GameState for State {
+    fn tick(&mut self, context: &mut Rltk) {
+        context.cls();
+
+        player_input(self, context);
+        self.run_system();
+
+        let map = self.ecs.fetch::<Vec<TileType>>();
+        draw_map(&map, context);
+
+        let positions = self.ecs.read_storage::<Position>();
+        let renderables = self.ecs.read_storage::<Renderable>();
+
+        for (pos, render) in (&positions, &renderables).join() {
+            context.set(
+                pos.x,
+                pos.y,
+                render.foreground,
+                render.background,
+                render.glyph,
+            );
+        }
+    }
+}
+
+impl State {
+    fn run_system(&mut self) {
+        self.ecs.maintain();
+    }
+}
+
 fn main() {
     use rltk::RltkBuilder;
     let context = RltkBuilder::simple80x50()
@@ -103,8 +155,9 @@ fn main() {
     let mut game_state = State { ecs: World::new() };
     game_state.ecs.register::<Position>();
     game_state.ecs.register::<Renderable>();
-    game_state.ecs.register::<LeftMover>();
     game_state.ecs.register::<Player>();
+
+    game_state.ecs.insert(new_map());
 
     game_state
         .ecs
@@ -117,20 +170,6 @@ fn main() {
         })
         .with(Player {})
         .build();
-
-    for i in 0..10 {
-        game_state
-            .ecs
-            .create_entity()
-            .with(Position { x: i * 7, y: 15 })
-            .with(Renderable {
-                glyph: rltk::to_cp437('☺'),
-                foreground: RGB::named(rltk::RED),
-                background: RGB::named(rltk::BLACK),
-            })
-            .with(LeftMover {})
-            .build();
-    }
 
     rltk::main_loop(context, game_state);
 }
