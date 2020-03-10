@@ -27,6 +27,7 @@ impl GameState for State {
     fn tick(&mut self, context: &mut Rltk) {
         context.cls();
 
+        player_input(self, context);
         self.run_system();
 
         let positions = self.ecs.read_storage::<Position>();
