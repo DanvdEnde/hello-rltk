@@ -1,5 +1,5 @@
-use specs::prelude::*;
 use rltk::RGB;
+use specs::prelude::*;
 
 #[derive(Component)]
 pub struct Position {
@@ -12,6 +12,13 @@ pub struct Renderable {
     pub glyph: u8,
     pub foreground: RGB,
     pub background: RGB,
+}
+
+#[derive(Component)]
+pub struct Viewshed {
+    pub visible_tiles: Vec<rltk::Point>,
+    pub range: i32,
+    pub dirty: bool,
 }
 
 #[derive(Component, Debug)]

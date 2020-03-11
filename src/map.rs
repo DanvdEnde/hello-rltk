@@ -1,5 +1,7 @@
 use super::Rect;
-use rltk::{Console, Rltk, RGB};
+use crate::{Player, Viewshed};
+use rltk::{Algorithm2D, BaseMap, Console, Point, Rltk, RGB};
+use specs::World;
 use std::cmp::{max, min};
 
 #[derive(PartialEq, Copy, Clone)]
@@ -13,6 +15,8 @@ pub struct Map {
     pub rooms: Vec<Rect>,
     pub width: i32,
     pub height: i32,
+    pub revealed_tiles: Vec<bool>,
+    pub visible_tiles: Vec<bool>,
 }
 
 impl Map {
@@ -56,6 +60,8 @@ impl Map {
             rooms: Vec::new(),
             width: 80,
             height: 50,
+            revealed_tiles: vec![false; 80 * 50],
+            visible_tiles: vec![false; 80 * 50],
         };
 
         const MAX_ROOMS: i32 = 30;
@@ -99,29 +105,42 @@ impl Map {
     }
 }
 
-pub fn draw_map(map: &[TileType], context: &mut Rltk) {
+impl Algorithm2D for Map {
+    fn dimensions(&self) -> Point {
+        Point::new(self.width, self.height)
+    }
+}
+
+impl BaseMap for Map {
+    fn is_opaque(&self, idx: usize) -> bool {
+        self.tiles[idx as usize] == TileType::Wall
+    }
+}
+
+pub fn draw_map(ecs: &World, context: &mut Rltk) {
+    let map = ecs.fetch::<Map>();
+
     let mut y = 0;
     let mut x = 0;
-    for tile in map.iter() {
-        match tile {
-            TileType::Floor => {
-                context.set(
-                    x,
-                    y,
-                    RGB::from_f32(0.5, 0.5, 0.5),
-                    RGB::from_f32(0., 0., 0.),
-                    rltk::to_cp437('.'),
-                );
+    for (idx, tile) in map.tiles.iter().enumerate() {
+        let pt = Point::new(x, y);
+        if map.revealed_tiles[idx] {
+            let glyph;
+            let mut foreground;
+            match tile {
+                TileType::Floor => {
+                    glyph = rltk::to_cp437('.');
+                    foreground = RGB::from_f32(0.5, 0.5, 0.5);
+                }
+                TileType::Wall => {
+                    glyph = rltk::to_cp437('#');
+                    foreground = RGB::from_f32(0.0, 1.0, 0.0);
+                }
             }
-            TileType::Wall => {
-                context.set(
-                    x,
-                    y,
-                    RGB::from_f32(0.0, 1.0, 0.0),
-                    RGB::from_f32(0., 0., 0.),
-                    rltk::to_cp437('#'),
-                );
+            if !map.visible_tiles[idx] {
+                foreground = foreground.to_greyscale()
             }
+            context.set(x, y, foreground, RGB::from_f32(0.0, 0.0, 0.0), glyph);
         }
 
         x += 1;
