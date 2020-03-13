@@ -45,16 +45,13 @@ impl Map {
     fn apply_vertical_tunnel(&mut self, y1: i32, y2: i32, x: i32) {
         for y in min(y1, y2)..=max(y1, y2) {
             let idx = self.xy_idx(x, y);
-            if idx > 0 && idx < 80 * 50 {
+            if idx > 0 && idx < self.width as usize * self.height as usize {
                 self.tiles[idx as usize] = TileType::Floor;
             }
         }
     }
 
     pub fn new_map_rooms_and_corridors() -> Map {
-        // let mut map = vec![TileType::Wall; 80 * 50];
-
-        // let mut rooms: Vec<Rect> = Vec::new();
         let mut map = Map {
             tiles: vec![TileType::Wall; 80 * 50],
             rooms: Vec::new(),
@@ -105,15 +102,15 @@ impl Map {
     }
 }
 
-impl Algorithm2D for Map {
-    fn dimensions(&self) -> Point {
-        Point::new(self.width, self.height)
-    }
-}
-
 impl BaseMap for Map {
     fn is_opaque(&self, idx: usize) -> bool {
         self.tiles[idx as usize] == TileType::Wall
+    }
+}
+
+impl Algorithm2D for Map {
+    fn dimensions(&self) -> Point {
+        Point::new(self.width, self.height)
     }
 }
 
@@ -123,14 +120,14 @@ pub fn draw_map(ecs: &World, context: &mut Rltk) {
     let mut y = 0;
     let mut x = 0;
     for (idx, tile) in map.tiles.iter().enumerate() {
-        let pt = Point::new(x, y);
+        // let pt = Point::new(x, y);
         if map.revealed_tiles[idx] {
             let glyph;
             let mut foreground;
             match tile {
                 TileType::Floor => {
                     glyph = rltk::to_cp437('.');
-                    foreground = RGB::from_f32(0.5, 0.5, 0.5);
+                    foreground = RGB::from_f32(0.0, 0.5, 0.5);
                 }
                 TileType::Wall => {
                     glyph = rltk::to_cp437('#');

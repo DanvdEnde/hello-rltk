@@ -33,8 +33,8 @@ impl<'a> System<'a> for VisibilitySystem {
                     for t in map.visible_tiles.iter_mut() {
                         *t = false
                     }
-                    for visible in viewshed.visible_tiles.iter() {
-                        let idx = map.xy_idx(visible.x, visible.y);
+                    for vis in viewshed.visible_tiles.iter() {
+                        let idx = map.xy_idx(vis.x, vis.y);
                         map.revealed_tiles[idx] = true;
                         map.visible_tiles[idx] = true;
                     }
