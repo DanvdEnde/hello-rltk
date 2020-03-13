@@ -1,6 +1,5 @@
-use rltk::{Console, GameState, Rltk, RGB};
+use rltk::{Console, GameState, Point, Rltk, RGB};
 use specs::prelude::*;
-use std::cmp::{max, min};
 #[macro_use]
 extern crate specs_derive;
 mod components;
@@ -15,6 +14,8 @@ mod visibility_system;
 use visibility_system::VisibilitySystem;
 mod monster_ai_system;
 use monster_ai_system::MonsterAI;
+mod map_indexing_system;
+use map_indexing_system::MapIndexingSystem;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -65,6 +66,8 @@ impl State {
         vis.run_now(&self.ecs);
         let mut mob = MonsterAI {};
         mob.run_now(&self.ecs);
+        let mut mapindex = MapIndexingSystem {};
+        mapindex.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -83,18 +86,27 @@ fn main() {
     game_state.ecs.register::<Viewshed>();
     game_state.ecs.register::<Player>();
     game_state.ecs.register::<Monster>();
+    game_state.ecs.register::<Name>();
+    game_state.ecs.register::<BlocksTile>();
 
     let map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
     let mut rng = rltk::RandomNumberGenerator::new();
-    for room in map.rooms.iter().skip(1) {
+    for (i, room) in map.rooms.iter().skip(1).enumerate() {
         let (x, y) = room.center();
 
         let glyph: u8;
+        let name: String;
         let roll = rng.roll_dice(1, 2);
         match roll {
-            1 => glyph = rltk::to_cp437('g'),
-            _ => glyph = rltk::to_cp437('o'),
+            1 => {
+                glyph = rltk::to_cp437('g');
+                name = "Gobbo".to_string();
+            }
+            _ => {
+                glyph = rltk::to_cp437('o');
+                name = "Orc".to_string();
+            }
         }
         game_state
             .ecs
@@ -111,6 +123,10 @@ fn main() {
                 dirty: true,
             })
             .with(Monster {})
+            .with(Name {
+                name: format!("{} #{}", &name, i),
+            })
+            .with(BlocksTile {})
             .build();
     }
     game_state.ecs.insert(map);
@@ -133,7 +149,11 @@ fn main() {
             range: 8,
             dirty: true,
         })
+        .with(Name {
+            name: "Player".to_string(),
+        })
         .build();
+    game_state.ecs.insert(Point::new(player_x, player_y));
 
     rltk::main_loop(context, game_state);
 }
