@@ -3,6 +3,10 @@ use rltk::{Algorithm2D, BaseMap, Console, Point, Rltk, RGB};
 use specs::{Entity, World};
 use std::cmp::{max, min};
 
+const MAP_WIDTH: usize = 80;
+const MAP_HEIGHT: usize = 50;
+const MAP_COUNT: usize = MAP_HEIGHT * MAP_WIDTH;
+
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
     Wall,
@@ -175,7 +179,7 @@ impl Algorithm2D for Map {
     }
 }
 
-pub fn draw_map(ecs: &World, context: &mut Rltk) {
+pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
     let map = ecs.fetch::<Map>();
 
     let mut y = 0;
@@ -198,7 +202,7 @@ pub fn draw_map(ecs: &World, context: &mut Rltk) {
             if !map.visible_tiles[idx] {
                 foreground = foreground.to_greyscale()
             }
-            context.set(x, y, foreground, RGB::from_f32(0.0, 0.0, 0.0), glyph);
+            ctx.set(x, y, foreground, RGB::from_f32(0.0, 0.0, 0.0), glyph);
         }
 
         x += 1;
