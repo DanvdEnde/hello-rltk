@@ -21,6 +21,7 @@ use melee_combat_system::MeleeCombatSystem;
 mod damage_system;
 use damage_system::DamageSystem;
 mod gui;
+mod gamelog;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -105,9 +106,10 @@ impl GameState for State {
 
 fn main() {
     use rltk::RltkBuilder;
-    let ctx = RltkBuilder::simple80x50()
+    let mut ctx = RltkBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
         .build();
+    ctx.with_post_scanlines(true);
     let mut gs = State { ecs: World::new() };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
@@ -199,6 +201,9 @@ fn main() {
     gs.ecs.insert(Point::new(player_x, player_y));
     gs.ecs.insert(player_entity);
     gs.ecs.insert(RunState::PreRun);
+    gs.ecs.insert(gamelog::GameLog {
+        entries: vec!["Welcome to this Rusted Roguelike".to_string()],
+    });
 
     rltk::main_loop(ctx, gs);
 }
