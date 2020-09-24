@@ -1,11 +1,11 @@
 use super::Rect;
-use rltk::{Algorithm2D, BaseMap, Console, Point, Rltk, RGB};
-use specs::{Entity, World};
+use rltk::{Algorithm2D, BaseMap, Point, RandomNumberGenerator, Rltk, RGB};
+use specs::prelude::*;
 use std::cmp::{max, min};
 
-const MAP_WIDTH: usize = 80;
-const MAP_HEIGHT: usize = 43;
-const MAP_COUNT: usize = MAP_HEIGHT * MAP_WIDTH;
+pub const MAP_WIDTH: usize = 80;
+pub const MAP_HEIGHT: usize = 43;
+pub const MAP_COUNT: usize = MAP_HEIGHT * MAP_WIDTH;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -31,8 +31,8 @@ impl Map {
     }
 
     fn apply_room_to_map(&mut self, room: &Rect) {
-        for y in (room.y1 + 1)..=(room.y2) {
-            for x in (room.x1 + 1)..=(room.x2) {
+        for y in room.y1 + 1..=room.y2 {
+            for x in room.x1 + 1..=room.x2 {
                 let idx = self.xy_idx(x, y);
                 self.tiles[idx] = TileType::Floor;
             }
@@ -42,7 +42,7 @@ impl Map {
     fn apply_horizontal_tunnel(&mut self, x1: i32, x2: i32, y: i32) {
         for x in min(x1, x2)..=max(x1, x2) {
             let idx = self.xy_idx(x, y);
-            if idx > 0 && idx < MAP_COUNT {
+            if idx > 0 && idx < self.width as usize * self.height as usize {
                 self.tiles[idx as usize] = TileType::Floor;
             }
         }
@@ -93,7 +93,7 @@ impl Map {
         const MIN_SIZE: i32 = 6;
         const MAX_SIZE: i32 = 10;
 
-        let mut rng = rltk::RandomNumberGenerator::new();
+        let mut rng = RandomNumberGenerator::new();
 
         for _ in 0..MAX_ROOMS {
             let w = rng.range(MIN_SIZE, MAX_SIZE);
@@ -135,8 +135,16 @@ impl BaseMap for Map {
         self.tiles[idx as usize] == TileType::Wall
     }
 
-    fn get_available_exits(&self, idx: usize) -> Vec<(usize, f32)> {
-        let mut exits: Vec<(usize, f32)> = Vec::new();
+    fn get_pathing_distance(&self, idx1: usize, idx2: usize) -> f32 {
+        let w = self.width as usize;
+        let p1 = Point::new(idx1 % w, idx1 / w);
+        let p2 = Point::new(idx2 % w, idx2 / w);
+        rltk::DistanceAlg::Pythagoras.distance2d(p1, p2)
+    }
+
+    fn get_available_exits(&self, idx: usize) -> rltk::SmallVec<[(usize, f32); 10]> {
+        // let mut exits: Vec<(usize, f32)> = Vec::new();
+        let mut exits = rltk::SmallVec::new();
         let x = idx as i32 % self.width;
         let y = idx as i32 / self.width;
         let w = self.width as usize;

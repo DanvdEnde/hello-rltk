@@ -1,6 +1,4 @@
-extern crate specs;
-use super::{CombatStats, Player, SufferDamage};
-use crate::{gamelog::GameLog, Name};
+use super::{gamelog::GameLog, CombatStats, Name, Player, SufferDamage};
 use rltk::console;
 use specs::prelude::*;
 
