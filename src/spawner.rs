@@ -2,6 +2,7 @@ use super::{
     map::MAP_WIDTH, BlocksTile, CombatStats, Item, Monster, Name, Player, Position, Potion, Rect,
     Renderable, Viewshed,
 };
+use crate::{Consumable, InflictsDamage, ProvidesHealing, Ranged};
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;
 
@@ -142,12 +143,44 @@ fn health_potion(ecs: &mut World, x: i32, y: i32) {
             glyph: rltk::to_cp437('i'),
             foreground: RGB::named(rltk::MAGENTA),
             background: RGB::named(rltk::BLACK),
-            render_order: 1,
+            render_order: 2,
         })
         .with(Name {
             name: "Health Potion".to_string(),
         })
         .with(Item {})
-        .with(Potion { heal_amount: 8 })
+        .with(Consumable {})
+        .with(ProvidesHealing { heal_amount: 8 })
         .build();
+}
+
+fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position { x, y })
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            foreground: RGB::named(rltk::CYAN),
+            background: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name {
+            name: "Magic Missile Scroll".to_string(),
+        })
+        .with(Item {})
+        .with(Consumable {})
+        .with(Ranged { range: 6 })
+        .with(InflictsDamage { damage: 8 })
+        .build();
+}
+
+fn random_item(ecs: &mut World, x: i32, y: i32) {
+    let roll: i32;
+    {
+        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
+        roll = rng.roll_dice(1, 2);
+    }
+    match roll {
+        1 => health_potion(ecs, x, y),
+        _ => magic_missile_scroll(ecs, x, y),
+    }
 }

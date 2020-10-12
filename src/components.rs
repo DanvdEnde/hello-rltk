@@ -96,3 +96,21 @@ pub struct WantsToDrinkPotion {
 pub struct WantsToDropItem {
     pub item: Entity,
 }
+
+#[derive(Component, Debug)]
+pub struct Consumable {}
+
+#[derive(Component, Debug)]
+pub struct ProvidesHealing {
+    pub heal_amount: i32,
+}
+
+#[derive(Component, Debug)]
+pub struct Ranged {
+    pub range: i32
+}
+
+#[derive(Component, Debug)]
+pub struct InflictsDamage {
+    pub damage: i32
+}
