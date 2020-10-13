@@ -1,5 +1,4 @@
 use super::{gamelog::GameLog, CombatStats, InBackpack, Map, Name, Player, Position, State};
-use crate::spawner::player;
 use crate::Viewshed;
 use rltk::{Point, Rltk, VirtualKeyCode, RGB};
 use specs::prelude::*;

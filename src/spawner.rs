@@ -1,8 +1,7 @@
 use super::{
-    map::MAP_WIDTH, BlocksTile, CombatStats, Item, Monster, Name, Player, Position, Potion, Rect,
-    Renderable, Viewshed,
+    map::MAP_WIDTH, AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InflictsDamage,
+    Item, Monster, Name, Player, Position, ProvidesHealing, Ranged, Rect, Renderable, Viewshed,
 };
-use crate::{Consumable, InflictsDamage, ProvidesHealing, Ranged};
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;
 
@@ -84,7 +83,7 @@ pub fn spawn_rooms(ecs: &mut World, room: &Rect) {
     for idx in item_spawn_points.iter() {
         let x = *idx % MAP_WIDTH;
         let y = *idx / MAP_WIDTH;
-        health_potion(ecs, x as i32, y as i32);
+        random_item(ecs, x as i32, y as i32);
     }
 }
 
@@ -173,14 +172,55 @@ fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
         .build();
 }
 
+fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position { x, y })
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            foreground: RGB::named(rltk::ORANGE),
+            background: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name {
+            name: "Fireball Scroll".to_string(),
+        })
+        .with(Item {})
+        .with(Consumable {})
+        .with(Ranged { range: 6 })
+        .with(InflictsDamage { damage: 20 })
+        .with(AreaOfEffect { radius: 3 })
+        .build();
+}
+
+fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position {x, y})
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            foreground: RGB::named(rltk::PURPLE),
+            background: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name {
+            name: "Confusion Scroll".to_string(),
+        })
+        .with(Item{})
+        .with(Consumable{})
+        .with(Ranged{range: 6})
+        .with(Confusion{turns: 4})
+        .build();
+}
+
 fn random_item(ecs: &mut World, x: i32, y: i32) {
     let roll: i32;
     {
         let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        roll = rng.roll_dice(1, 2);
+        roll = rng.roll_dice(1, 4);
     }
     match roll {
         1 => health_potion(ecs, x, y),
-        _ => magic_missile_scroll(ecs, x, y),
+        2 => magic_missile_scroll(ecs, x, y),
+        3 => fireball_scroll(ecs, x, y),
+        _ => confusion_scroll(ecs, x, y),
     }
 }

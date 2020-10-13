@@ -2,48 +2,28 @@ use rltk::{GameState, Point, Rltk};
 use specs::prelude::*;
 
 mod components;
-
 pub use components::*;
-
 mod map;
-
 pub use map::*;
-
 mod player;
-
 use player::*;
-
 mod rect;
-
 pub use rect::Rect;
-
 mod visibility_system;
-
 use visibility_system::VisibilitySystem;
-
 mod monster_ai_system;
-
 use monster_ai_system::MonsterAI;
-
 mod map_indexing_system;
-
 use map_indexing_system::MapIndexingSystem;
-
 mod melee_combat_system;
-
 use melee_combat_system::MeleeCombatSystem;
-
 mod damage_system;
-
 use damage_system::DamageSystem;
-
 mod gamelog;
 mod gui;
 mod inventory_system;
 mod spawner;
-
-use crate::inventory_system::{ItemDropSystem, ItemUseSystem};
-use inventory_system::ItemCollectionSystem;
+use inventory_system::{ItemCollectionSystem, ItemDropSystem, ItemUseSystem};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -184,7 +164,16 @@ impl GameState for State {
                 }
             }
             RunState::ShowTargeting { range, item } => {
-                let target = gui::ranged_target(self, ctx, range);
+                let result = gui::ranged_target(self, ctx, range);
+                match result.0 {
+                    gui::ItemMenuResult::Cancel => newrunstate = RunState::AwaitingInput,
+                    gui::ItemMenuResult::NoResponse => {},
+                    gui::ItemMenuResult::Selected => {
+                        let mut intent = self.ecs.write_storage::<WantsToUseItem>();
+                        intent.insert(*self.ecs.fetch::<Entity>(), WantsToUseItem{item, target: result.1}).expect("Unable to insert intent");
+                        newrunstate = RunState::PlayerTurn;
+                    }
+                }
             }
         }
 
@@ -214,10 +203,15 @@ fn main() -> rltk::BError {
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
     gs.ecs.register::<Item>();
-    gs.ecs.register::<Potion>();
+    gs.ecs.register::<ProvidesHealing>();
+    gs.ecs.register::<InflictsDamage>();
+    gs.ecs.register::<AreaOfEffect>();
+    gs.ecs.register::<Consumable>();
+    gs.ecs.register::<Ranged>();
+    gs.ecs.register::<Confusion>();
     gs.ecs.register::<InBackpack>();
     gs.ecs.register::<WantsToPickupItem>();
-    gs.ecs.register::<WantsToDrinkPotion>();
+    gs.ecs.register::<WantsToUseItem>();
     gs.ecs.register::<WantsToDropItem>();
 
     let map: Map = Map::new_map_rooms_and_corridors();

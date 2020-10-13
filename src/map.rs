@@ -1,7 +1,7 @@
-use super::Rect;
-use rltk::{Algorithm2D, BaseMap, Point, RandomNumberGenerator, Rltk, RGB};
-use specs::prelude::*;
+use rltk::{ RGB, Rltk, RandomNumberGenerator, BaseMap, Algorithm2D, Point };
+use super::{Rect};
 use std::cmp::{max, min};
+use specs::prelude::*;
 
 pub const MAP_WIDTH: usize = 80;
 pub const MAP_HEIGHT: usize = 43;
