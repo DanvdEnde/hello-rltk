@@ -1,5 +1,5 @@
 extern crate specs;
-use super::{Map, Monster, Position, RunState, Viewshed, WantsToMelee, Confusion};
+use super::{Confusion, Map, Monster, Position, RunState, Viewshed, WantsToMelee};
 use specs::prelude::*;
 extern crate rltk;
 use rltk::Point;
@@ -52,7 +52,6 @@ impl<'a> System<'a> for MonsterAI {
                 }
                 can_act = false;
             }
-
 
             if can_act {
                 let distance =

@@ -1,7 +1,9 @@
+use super::{
+    gamelog::GameLog, AreaOfEffect, CombatStats, Confusion, Consumable, InBackpack, InflictsDamage,
+    Map, Name, Position, ProvidesHealing, SufferDamage, WantsToDropItem, WantsToPickupItem,
+    WantsToUseItem,
+};
 use specs::prelude::*;
-use super::{WantsToPickupItem, Name, InBackpack, Position, gamelog::GameLog, WantsToUseItem,
-    Consumable, ProvidesHealing, CombatStats, WantsToDropItem, InflictsDamage, Map, SufferDamage,
-    AreaOfEffect, Confusion};
 
 pub struct ItemCollectionSystem {}
 
@@ -50,7 +52,7 @@ impl<'a> System<'a> for ItemUseSystem {
     type SystemData = (
         ReadExpect<'a, Entity>,
         WriteExpect<'a, GameLog>,
-        ReadExpect<'a , Map>,
+        ReadExpect<'a, Map>,
         Entities<'a>,
         WriteStorage<'a, WantsToUseItem>,
         ReadStorage<'a, Name>,
@@ -60,21 +62,34 @@ impl<'a> System<'a> for ItemUseSystem {
         WriteStorage<'a, CombatStats>,
         WriteStorage<'a, SufferDamage>,
         ReadStorage<'a, AreaOfEffect>,
-        WriteStorage<'a, Confusion>
-        
+        WriteStorage<'a, Confusion>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (player_entity, mut gamelog, map, entities, mut wants_use, names,
-            consumables, healing, inflict_damage, mut combat_stats, mut suffer_damage,
-            aoe, mut confused) = data;
+        let (
+            player_entity,
+            mut gamelog,
+            map,
+            entities,
+            mut wants_use,
+            names,
+            consumables,
+            healing,
+            inflict_damage,
+            mut combat_stats,
+            mut suffer_damage,
+            aoe,
+            mut confused,
+        ) = data;
 
         for (entity, use_item) in (&entities, &wants_use).join() {
             let mut used_item = true;
 
-            let mut targets : Vec<Entity> = Vec::new();
+            let mut targets: Vec<Entity> = Vec::new();
             match use_item.target {
-                None => {targets.push( *player_entity );}
+                None => {
+                    targets.push(*player_entity);
+                }
                 Some(target) => {
                     let area_effect = aoe.get(use_item.item);
                     match area_effect {
@@ -85,8 +100,11 @@ impl<'a> System<'a> for ItemUseSystem {
                             }
                         }
                         Some(area_effect) => {
-                            let mut blast_tiles = rltk::field_of_view(target, area_effect.radius, &*map);
-                            blast_tiles.retain(|p| p.x > 0 && p.x < map.width-1 && p.y > 0 && p.y < map.height-1 );
+                            let mut blast_tiles =
+                                rltk::field_of_view(target, area_effect.radius, &*map);
+                            blast_tiles.retain(|p| {
+                                p.x > 0 && p.x < map.width - 1 && p.y > 0 && p.y < map.height - 1
+                            });
                             for tile_idx in blast_tiles.iter() {
                                 let idx = map.xy_idx(tile_idx.x, tile_idx.y);
                                 for mob in map.tile_content[idx].iter() {
@@ -108,7 +126,10 @@ impl<'a> System<'a> for ItemUseSystem {
                         if entity == *player_entity {
                             let mob_name = names.get(*mob).unwrap();
                             let item_name = names.get(use_item.item).unwrap();
-                            gamelog.entries.push(format!("You use {} on {}, inflicting {} hp.", item_name.name, mob_name.name, damage.damage));
+                            gamelog.entries.push(format!(
+                                "You use {} on {}, inflicting {} hp.",
+                                item_name.name, mob_name.name, damage.damage
+                            ));
                         }
 
                         used_item = true;
@@ -125,7 +146,11 @@ impl<'a> System<'a> for ItemUseSystem {
                         if let Some(stats) = stats {
                             stats.hp = i32::min(stats.max_hp, stats.hp + healer.heal_amount);
                             if entity == *player_entity {
-                                gamelog.entries.push(format!("You use a {}, healing {} hp.", names.get(use_item.item).unwrap().name, healer.heal_amount));
+                                gamelog.entries.push(format!(
+                                    "You use a {}, healing {} hp.",
+                                    names.get(use_item.item).unwrap().name,
+                                    healer.heal_amount
+                                ));
                             }
                             used_item = true;
                         }
@@ -137,7 +162,7 @@ impl<'a> System<'a> for ItemUseSystem {
             {
                 let causes_confusion = confused.get(use_item.item);
                 match causes_confusion {
-                    None=> {}
+                    None => {}
                     Some(confusion) => {
                         used_item = false;
                         for mob in targets.iter() {
@@ -145,7 +170,10 @@ impl<'a> System<'a> for ItemUseSystem {
                             if entity == *player_entity {
                                 let mob_name = names.get(*mob).unwrap();
                                 let item_name = names.get(use_item.item).unwrap();
-                                gamelog.entries.push(format!("You use {} on {}, confusing them.", item_name.name, mob_name.name));
+                                gamelog.entries.push(format!(
+                                    "You use {} on {}, confusing them.",
+                                    item_name.name, mob_name.name
+                                ));
                             }
                             used_item = true;
                         }
@@ -154,16 +182,16 @@ impl<'a> System<'a> for ItemUseSystem {
             }
 
             for mob in add_confusion.iter() {
-                confused.insert(mob.0, Confusion{ turns: mob.1}).expect("Unable to insert status");
+                confused
+                    .insert(mob.0, Confusion { turns: mob.1 })
+                    .expect("Unable to insert status");
             }
 
             if used_item {
                 let consumable = consumables.get(use_item.item);
                 match consumable {
                     None => {}
-                    Some(_) => {
-                        entities.delete(use_item.item).expect("Delete failed")
-                    }
+                    Some(_) => entities.delete(use_item.item).expect("Delete failed"),
                 }
             }
         }
