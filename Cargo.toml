@@ -7,7 +7,7 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rltk = {version = "0.8.0", features = ["serde"]}
+rltk = {version = "0.8.1", features = ["serde"]}
 serde = {version = "1.0.117", features = ["derive"]}
 serde_json = "1.0.59"
 specs = {version = "0.16.1", features = ["serde"]}
