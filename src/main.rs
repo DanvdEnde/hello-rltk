@@ -1,9 +1,7 @@
 extern crate serde;
-use rltk::{GameState, Point, Rltk, Input};
-use specs::{
-    prelude::*,
-    saveload::{SimpleMarker, SimpleMarkerAllocator},
-};
+use rltk::{GameState, Point, Rltk};
+use specs::prelude::*;
+use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
 
 mod components;
 pub use components::*;
@@ -28,6 +26,7 @@ mod gui;
 mod inventory_system;
 mod spawner;
 use inventory_system::{ItemCollectionSystem, ItemDropSystem, ItemUseSystem};
+pub mod random_table;
 pub mod saveload_system;
 
 #[derive(PartialEq, Copy, Clone)]
@@ -46,7 +45,7 @@ pub enum RunState {
         menu_selection: gui::MainMenuSelection,
     },
     SaveGame,
-    NextLevel
+    NextLevel,
 }
 
 pub struct State {
@@ -101,13 +100,7 @@ impl GameState for State {
                     for (pos, render) in data.iter() {
                         let idx = map.xy_idx(pos.x, pos.y);
                         if map.visible_tiles[idx] {
-                            ctx.set(
-                                pos.x,
-                                pos.y,
-                                render.foreground,
-                                render.background,
-                                render.glyph,
-                            )
+                            ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph)
                         }
                     }
 
@@ -249,7 +242,7 @@ impl State {
         let backpack = self.ecs.read_storage::<InBackpack>();
         let player_entity = self.ecs.fetch::<Entity>();
 
-        let mut to_delete : Vec<Entity> = Vec::new();
+        let mut to_delete: Vec<Entity> = Vec::new();
         for entity in entities.join() {
             let mut should_delete = true;
 
@@ -276,19 +269,22 @@ impl State {
     fn goto_next_level(&mut self) {
         let to_delete = self.entities_to_remove_on_level_change();
         for target in to_delete {
-            self.ecs.delete_entity(target).expect("Unable to delete entity");
+            self.ecs
+                .delete_entity(target)
+                .expect("Unable to delete entity");
         }
 
         let worldmap;
+        let current_depth;
         {
             let mut worldmap_resource = self.ecs.write_resource::<Map>();
-            let current_depth = worldmap_resource.depth;
-            *worldmap_resource  = Map::new_map_rooms_and_corridors(current_depth + 1);
+            current_depth = worldmap_resource.depth;
+            *worldmap_resource = Map::new_map_rooms_and_corridors(current_depth + 1);
             worldmap = worldmap_resource.clone();
         }
 
         for room in worldmap.rooms.iter().skip(1) {
-            spawner::spawn_rooms(&mut self.ecs, room);
+            spawner::spawn_rooms(&mut self.ecs, room, current_depth + 1);
         }
 
         let (player_x, player_y) = worldmap.rooms[0].center();
@@ -309,7 +305,9 @@ impl State {
         }
 
         let mut gamelog = self.ecs.fetch_mut::<gamelog::GameLog>();
-        gamelog.entries.push("You fall down to the next level, and take some time to heal your booboo.".to_string());
+        gamelog.entries.push(
+            "You fall down to the next level, and take some time to heal your booboo.".to_string(),
+        );
         let mut player_health_store = self.ecs.write_storage::<CombatStats>();
         let player_health = player_health_store.get_mut(*player_entity);
         if let Some(player_health) = player_health {
@@ -358,7 +356,7 @@ fn main() -> rltk::BError {
 
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     for room in map.rooms.iter().skip(1) {
-        spawner::spawn_rooms(&mut gs.ecs, room);
+        spawner::spawn_rooms(&mut gs.ecs, room, 1);
     }
 
     gs.ecs.insert(map);

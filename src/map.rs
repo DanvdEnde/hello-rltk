@@ -83,7 +83,7 @@ impl Map {
         }
     }
 
-    pub fn new_map_rooms_and_corridors(new_depth : i32) -> Map {
+    pub fn new_map_rooms_and_corridors(new_depth: i32) -> Map {
         let mut map = Map {
             tiles: vec![TileType::Wall; MAP_COUNT],
             rooms: Vec::new(),
@@ -133,7 +133,7 @@ impl Map {
             }
         }
 
-        let stairs_position = map.rooms[map.rooms.len()-1].center();
+        let stairs_position = map.rooms[map.rooms.len() - 1].center();
         let stairs_idx = map.xy_idx(stairs_position.0, stairs_position.1);
         map.tiles[stairs_idx] = TileType::DownStairs;
 
@@ -207,25 +207,25 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
         // let pt = Point::new(x, y);
         if map.revealed_tiles[idx] {
             let glyph;
-            let mut foreground;
+            let mut fg;
             match tile {
                 TileType::Floor => {
                     glyph = rltk::to_cp437('.');
-                    foreground = RGB::from_f32(0.0, 0.5, 0.5);
+                    fg = RGB::from_f32(0.0, 0.5, 0.5);
                 }
                 TileType::Wall => {
                     glyph = rltk::to_cp437('#');
-                    foreground = RGB::from_f32(0.0, 1.0, 0.0);
+                    fg = RGB::from_f32(0.0, 1.0, 0.0);
                 }
                 TileType::DownStairs => {
                     glyph = rltk::to_cp437('>');
-                    foreground = RGB::from_f32(0.0, 1.0, 1.0);
+                    fg = RGB::from_f32(0.0, 1.0, 1.0);
                 }
             }
             if !map.visible_tiles[idx] {
-                foreground = foreground.to_greyscale()
+                fg = fg.to_greyscale()
             }
-            ctx.set(x, y, foreground, RGB::from_f32(0.0, 0.0, 0.0), glyph);
+            ctx.set(x, y, fg, RGB::from_f32(0.0, 0.0, 0.0), glyph);
         }
 
         x += 1;

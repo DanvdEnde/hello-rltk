@@ -1,9 +1,9 @@
-use specs::prelude::*;
-use specs_derive::*;
-use rltk::{RGB};
-use serde::{Serialize, Deserialize};
-use specs::saveload::{Marker, ConvertSaveload};
+use rltk::RGB;
+use serde::{Deserialize, Serialize};
 use specs::error::NoError;
+use specs::prelude::*;
+use specs::saveload::{ConvertSaveload, Marker};
+use specs_derive::*;
 
 #[derive(Component, ConvertSaveload, Clone)]
 pub struct Position {
@@ -14,8 +14,8 @@ pub struct Position {
 #[derive(Component, ConvertSaveload, Clone)]
 pub struct Renderable {
     pub glyph: rltk::FontCharType,
-    pub foreground: RGB,
-    pub background: RGB,
+    pub fg: RGB,
+    pub bg: RGB,
     pub render_order: i32,
 }
 
@@ -29,18 +29,18 @@ pub struct Viewshed {
     pub dirty: bool,
 }
 
-#[derive(Component,Debug, Serialize, Deserialize, Clone)]
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Monster {}
 
-#[derive(Component,Debug, ConvertSaveload, Clone)]
+#[derive(Component, Debug, ConvertSaveload, Clone)]
 pub struct Name {
     pub name: String,
 }
 
-#[derive(Component,Debug, Serialize, Deserialize, Clone)]
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct BlocksTile {}
 
-#[derive(Component,Debug, ConvertSaveload, Clone)]
+#[derive(Component, Debug, ConvertSaveload, Clone)]
 pub struct CombatStats {
     pub max_hp: i32,
     pub hp: i32,
@@ -71,10 +71,10 @@ impl SufferDamage {
     }
 }
 
-#[derive(Component,Debug, Serialize, Deserialize, Clone)]
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Item {}
 
-#[derive(Component,Debug, Serialize, Deserialize, Clone)]
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Consumable {}
 
 #[derive(Component, Debug, ConvertSaveload, Clone)]
@@ -128,5 +128,5 @@ pub struct SerializeMe;
 
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct SerializationHelper {
-    pub map : super::map::Map
+    pub map: super::map::Map,
 }
