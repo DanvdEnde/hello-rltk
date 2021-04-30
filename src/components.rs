@@ -102,9 +102,36 @@ pub struct ProvidesHealing {
     pub heal_amount: i32,
 }
 
+#[derive(Component, ConvertSaveload, Clone)]
+pub struct MeleePowerBonus {
+    pub power: i32,
+}
+
+#[derive(Component, ConvertSaveload, Clone)]
+pub struct DefenseBonus {
+    pub defense: i32,
+}
+
 #[derive(Component, Debug, ConvertSaveload)]
 pub struct InBackpack {
     pub owner: Entity,
+}
+
+#[derive(PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub enum EquipmentSlot {
+    Melee,
+    Shield,
+}
+
+#[derive(Component, Serialize, Deserialize, Clone)]
+pub struct Equippable {
+    pub slot: EquipmentSlot,
+}
+
+#[derive(Component, ConvertSaveload, Clone)]
+pub struct Equipped {
+    pub owner: Entity,
+    pub slot: EquipmentSlot,
 }
 
 #[derive(Component, Debug, ConvertSaveload)]
@@ -121,6 +148,11 @@ pub struct WantsToUseItem {
 
 #[derive(Component, Debug, ConvertSaveload)]
 pub struct WantsToDropItem {
+    pub item: Entity,
+}
+
+#[derive(Component, Debug, ConvertSaveload, Clone)]
+pub struct WantsToRemoveItem {
     pub item: Entity,
 }
 

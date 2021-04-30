@@ -77,10 +77,15 @@ pub fn save_game(ecs: &mut World) {
             AreaOfEffect,
             Confusion,
             ProvidesHealing,
+            MeleePowerBonus,
+            DefenseBonus,
             InBackpack,
+            Equippable,
+            Equipped,
             WantsToPickupItem,
             WantsToUseItem,
             WantsToDropItem,
+            WantsToRemoveItem,
             SerializationHelper
         );
     }
@@ -138,10 +143,15 @@ pub fn load_game(ecs: &mut World) {
             AreaOfEffect,
             Confusion,
             ProvidesHealing,
+            MeleePowerBonus,
+            DefenseBonus,
             InBackpack,
+            Equippable,
+            Equipped,
             WantsToPickupItem,
             WantsToUseItem,
             WantsToDropItem,
+            WantsToRemoveItem,
             SerializationHelper
         );
     }
