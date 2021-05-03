@@ -440,6 +440,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<WantsToPickupItem>();
     gs.ecs.register::<WantsToUseItem>();
     gs.ecs.register::<WantsToDropItem>();
+    gs.ecs.register::<WantsToRemoveItem>();
     gs.ecs.register::<SimpleMarker<SerializeMe>>();
     gs.ecs.register::<SerializationHelper>();
 
