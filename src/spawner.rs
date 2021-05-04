@@ -1,9 +1,8 @@
-use crate::{DefenseBonus, EquipmentSlot, Equippable, MeleePowerBonus};
-
 use super::{
     map::MAP_WIDTH, random_table::RandomTable, AreaOfEffect, BlocksTile, CombatStats, Confusion,
-    Consumable, InflictsDamage, Item, Monster, Name, Player, Position, ProvidesHealing, Ranged,
-    Rect, Renderable, SerializeMe, Viewshed,
+    Consumable, DefenseBonus, EquipmentSlot, Equippable, InflictsDamage, Item, MeleePowerBonus,
+    Monster, Name, Player, Position, ProvidesHealing, Ranged, Rect, Renderable, SerializeMe,
+    Viewshed,
 };
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;

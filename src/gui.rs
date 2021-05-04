@@ -1,8 +1,6 @@
-use crate::Equipped;
-
 use super::{
-    gamelog::GameLog, CombatStats, InBackpack, Map, Name, Player, Position, RunState, State,
-    Viewshed,
+    gamelog::GameLog, CombatStats, Equipped, InBackpack, Map, Name, Player, Position, RunState,
+    State, Viewshed,
 };
 use rltk::{Point, Rltk, VirtualKeyCode, RGB};
 use specs::prelude::*;

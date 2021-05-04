@@ -24,6 +24,7 @@ use damage_system::DamageSystem;
 mod gamelog;
 mod gui;
 mod inventory_system;
+mod particle_system;
 mod spawner;
 use inventory_system::{ItemCollectionSystem, ItemDropSystem, ItemRemoveSystem, ItemUseSystem};
 pub mod random_table;
@@ -74,6 +75,8 @@ impl State {
         drop_items.run_now(&self.ecs);
         let mut remove_item = ItemRemoveSystem {};
         remove_item.run_now(&self.ecs);
+        let mut particles = particle_system::ParticleSpawnSystem {};
+        particles.run_now(&self.ecs);
 
         self.ecs.maintain();
     }
@@ -88,6 +91,7 @@ impl GameState for State {
         }
 
         ctx.cls();
+        particle_system::cull_dead_particle(&mut self.ecs, ctx);
 
         match newrunstate {
             RunState::MainMenu { .. } => {}
@@ -445,6 +449,8 @@ fn main() -> rltk::BError {
     gs.ecs.register::<SerializationHelper>();
 
     gs.ecs.insert(SimpleMarkerAllocator::<SerializeMe>::new());
+
+    gs.ecs.insert(particle_system::ParticleBuilder::new());
 
     let map: Map = Map::new_map_rooms_and_corridors(1);
     let (player_x, player_y) = map.rooms[0].center();
