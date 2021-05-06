@@ -77,6 +77,8 @@ pub fn save_game(ecs: &mut World) {
             AreaOfEffect,
             Confusion,
             ProvidesHealing,
+            ProvidesFood,
+            RevealsMap,
             MeleePowerBonus,
             DefenseBonus,
             InBackpack,
@@ -86,6 +88,11 @@ pub fn save_game(ecs: &mut World) {
             WantsToUseItem,
             WantsToDropItem,
             WantsToRemoveItem,
+            HungerClock,
+            Hidden,
+            EntryTrigger,
+            EntityMoved,
+            SingleActivation,
             SerializationHelper
         );
     }
@@ -143,6 +150,8 @@ pub fn load_game(ecs: &mut World) {
             AreaOfEffect,
             Confusion,
             ProvidesHealing,
+            ProvidesFood,
+            RevealsMap,
             MeleePowerBonus,
             DefenseBonus,
             InBackpack,
@@ -152,6 +161,11 @@ pub fn load_game(ecs: &mut World) {
             WantsToUseItem,
             WantsToDropItem,
             WantsToRemoveItem,
+            HungerClock,
+            Hidden,
+            EntryTrigger,
+            EntityMoved,
+            SingleActivation,
             SerializationHelper
         );
     }

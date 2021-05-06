@@ -1,6 +1,6 @@
 use super::{ParticleLifetime, Position, Renderable, Rltk};
 use rltk::RGB;
-use specs::{prelude::*, storage::GenericWriteStorage};
+use specs::prelude::*;
 
 struct ParticleRequest {
     x: i32,

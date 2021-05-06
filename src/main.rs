@@ -1,4 +1,6 @@
 extern crate serde;
+use std::usize;
+
 use rltk::{GameState, Point, Rltk};
 use specs::prelude::*;
 use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
@@ -23,11 +25,14 @@ mod damage_system;
 use damage_system::DamageSystem;
 mod gamelog;
 mod gui;
+mod hunger_system;
 mod inventory_system;
 mod particle_system;
 mod spawner;
+mod trigger_system;
 use inventory_system::{ItemCollectionSystem, ItemDropSystem, ItemRemoveSystem, ItemUseSystem};
 pub mod random_table;
+mod rex_assets;
 pub mod saveload_system;
 
 #[derive(PartialEq, Copy, Clone)]
@@ -42,6 +47,9 @@ pub enum RunState {
     ShowTargeting {
         range: i32,
         item: Entity,
+    },
+    RevealingMap {
+        row: i32,
     },
     MainMenu {
         menu_selection: gui::MainMenuSelection,
@@ -61,6 +69,8 @@ impl State {
         vis.run_now(&self.ecs);
         let mut mob = MonsterAI {};
         mob.run_now(&self.ecs);
+        let mut triggers = trigger_system::TriggerSystem {};
+        triggers.run_now(&self.ecs);
         let mut mapindex = MapIndexingSystem {};
         mapindex.run_now(&self.ecs);
         let mut melee = MeleeCombatSystem {};
@@ -75,6 +85,8 @@ impl State {
         drop_items.run_now(&self.ecs);
         let mut remove_item = ItemRemoveSystem {};
         remove_item.run_now(&self.ecs);
+        let mut hunger = hunger_system::HungerSystem {};
+        hunger.run_now(&self.ecs);
         let mut particles = particle_system::ParticleSpawnSystem {};
         particles.run_now(&self.ecs);
 
@@ -101,11 +113,14 @@ impl GameState for State {
                 {
                     let positions = self.ecs.read_storage::<Position>();
                     let renderables = self.ecs.read_storage::<Renderable>();
+                    let hidden = self.ecs.read_storage::<Hidden>();
                     let map = self.ecs.fetch::<Map>();
 
-                    let mut data = (&positions, &renderables).join().collect::<Vec<_>>();
+                    let mut data = (&positions, &renderables, !&hidden)
+                        .join()
+                        .collect::<Vec<_>>();
                     data.sort_by(|&a, &b| b.1.render_order.cmp(&a.1.render_order));
-                    for (pos, render) in data.iter() {
+                    for (pos, render, _hidden) in data.iter() {
                         let idx = map.xy_idx(pos.x, pos.y);
                         if map.visible_tiles[idx] {
                             ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph)
@@ -127,7 +142,12 @@ impl GameState for State {
             RunState::PlayerTurn => {
                 self.run_system();
                 self.ecs.maintain();
-                newrunstate = RunState::MonsterTurn;
+                match *self.ecs.fetch::<RunState>() {
+                    RunState::RevealingMap { .. } => {
+                        newrunstate = RunState::RevealingMap { row: 0 }
+                    }
+                    _ => newrunstate = RunState::MonsterTurn,
+                }
             }
             RunState::MonsterTurn => {
                 self.run_system();
@@ -220,6 +240,18 @@ impl GameState for State {
                             .expect("Unable to insert intent");
                         newrunstate = RunState::PlayerTurn;
                     }
+                }
+            }
+            RunState::RevealingMap { row } => {
+                let mut map = self.ecs.fetch_mut::<Map>();
+                for x in 0..MAP_WIDTH {
+                    let idx = map.xy_idx(x as i32, row);
+                    map.revealed_tiles[idx] = true;
+                }
+                if row as usize == MAP_HEIGHT - 1 {
+                    newrunstate = RunState::MonsterTurn;
+                } else {
+                    newrunstate = RunState::RevealingMap { row: row + 1 };
                 }
             }
             RunState::MainMenu { .. } => {
@@ -421,6 +453,7 @@ fn main() -> rltk::BError {
     let mut gs = State { ecs: World::new() };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
+    gs.ecs.register::<ParticleLifetime>();
     gs.ecs.register::<Player>();
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Monster>();
@@ -431,11 +464,13 @@ fn main() -> rltk::BError {
     gs.ecs.register::<SufferDamage>();
     gs.ecs.register::<Item>();
     gs.ecs.register::<ProvidesHealing>();
+    gs.ecs.register::<ProvidesFood>();
     gs.ecs.register::<InflictsDamage>();
     gs.ecs.register::<AreaOfEffect>();
     gs.ecs.register::<Consumable>();
     gs.ecs.register::<Confusion>();
     gs.ecs.register::<Ranged>();
+    gs.ecs.register::<RevealsMap>();
     gs.ecs.register::<InBackpack>();
     gs.ecs.register::<MeleePowerBonus>();
     gs.ecs.register::<DefenseBonus>();
@@ -445,12 +480,19 @@ fn main() -> rltk::BError {
     gs.ecs.register::<WantsToUseItem>();
     gs.ecs.register::<WantsToDropItem>();
     gs.ecs.register::<WantsToRemoveItem>();
+    gs.ecs.register::<HungerClock>();
+    gs.ecs.register::<Hidden>();
+    gs.ecs.register::<EntryTrigger>();
+    gs.ecs.register::<EntityMoved>();
+    gs.ecs.register::<SingleActivation>();
     gs.ecs.register::<SimpleMarker<SerializeMe>>();
     gs.ecs.register::<SerializationHelper>();
 
     gs.ecs.insert(SimpleMarkerAllocator::<SerializeMe>::new());
 
     gs.ecs.insert(particle_system::ParticleBuilder::new());
+
+    gs.ecs.insert(rex_assets::RexAssets::new());
 
     let map: Map = Map::new_map_rooms_and_corridors(1);
     let (player_x, player_y) = map.rooms[0].center();

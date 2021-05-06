@@ -2,7 +2,7 @@ extern crate specs;
 
 use super::{
     gamelog::GameLog, particle_system::ParticleBuilder, CombatStats, DefenseBonus, Equipped,
-    MeleePowerBonus, Name, Position, SufferDamage, WantsToMelee,
+    HungerClock, HungerState, MeleePowerBonus, Name, Position, SufferDamage, WantsToMelee,
 };
 use specs::prelude::*;
 
@@ -20,6 +20,7 @@ impl<'a> System<'a> for MeleeCombatSystem {
         ReadStorage<'a, MeleePowerBonus>,
         ReadStorage<'a, DefenseBonus>,
         ReadStorage<'a, Equipped>,
+        WriteStorage<'a, HungerClock>,
         WriteExpect<'a, ParticleBuilder>,
         ReadStorage<'a, Position>,
     );
@@ -35,6 +36,7 @@ impl<'a> System<'a> for MeleeCombatSystem {
             melee_power_bonus,
             defense_bonuses,
             equipped,
+            hunger_clock,
             mut particle_builder,
             positions,
         ) = data;
@@ -49,6 +51,13 @@ impl<'a> System<'a> for MeleeCombatSystem {
                 {
                     if equipped_by.owner == _entity {
                         offensive_bonus += power_bonus.power;
+                    }
+                }
+
+                let hc = hunger_clock.get(_entity);
+                if let Some(hc) = hc {
+                    if hc.state == HungerState::WellFed {
+                        offensive_bonus += 1;
                     }
                 }
 

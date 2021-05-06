@@ -1,8 +1,8 @@
 use super::{
     gamelog::GameLog, particle_system::ParticleBuilder, AreaOfEffect, CombatStats, Confusion,
-    Consumable, Equippable, Equipped, InBackpack, InflictsDamage, Map, Name, Position,
-    ProvidesHealing, SufferDamage, WantsToDropItem, WantsToPickupItem, WantsToRemoveItem,
-    WantsToUseItem,
+    Consumable, Equippable, Equipped, HungerClock, HungerState, InBackpack, InflictsDamage, Map,
+    Name, Position, ProvidesFood, ProvidesHealing, RevealsMap, RunState, SufferDamage,
+    WantsToDropItem, WantsToPickupItem, WantsToRemoveItem, WantsToUseItem,
 };
 use specs::prelude::*;
 
@@ -53,20 +53,24 @@ impl<'a> System<'a> for ItemUseSystem {
     type SystemData = (
         ReadExpect<'a, Entity>,
         WriteExpect<'a, GameLog>,
-        ReadExpect<'a, Map>,
+        WriteExpect<'a, Map>,
+        WriteExpect<'a, RunState>,
         Entities<'a>,
         WriteStorage<'a, WantsToUseItem>,
         ReadStorage<'a, Name>,
         ReadStorage<'a, Consumable>,
         ReadStorage<'a, ProvidesHealing>,
+        ReadStorage<'a, ProvidesFood>,
         ReadStorage<'a, InflictsDamage>,
         WriteStorage<'a, CombatStats>,
         WriteStorage<'a, SufferDamage>,
         ReadStorage<'a, AreaOfEffect>,
         WriteStorage<'a, Confusion>,
+        ReadStorage<'a, RevealsMap>,
         ReadStorage<'a, Equippable>,
         WriteStorage<'a, Equipped>,
         WriteStorage<'a, InBackpack>,
+        WriteStorage<'a, HungerClock>,
         WriteExpect<'a, ParticleBuilder>,
         ReadStorage<'a, Position>,
     );
@@ -76,19 +80,23 @@ impl<'a> System<'a> for ItemUseSystem {
             player_entity,
             mut gamelog,
             map,
+            mut runstate,
             entities,
             mut wants_use,
             names,
             consumables,
             healing,
+            provides_food,
             inflict_damage,
             mut combat_stats,
             mut suffer_damage,
             aoe,
             mut confused,
+            reveals_map,
             equippable,
             mut equipped,
             mut backpack,
+            mut hunger_clock,
             mut particle_builder,
             positions,
         ) = data;
@@ -201,6 +209,24 @@ impl<'a> System<'a> for ItemUseSystem {
                 }
             }
 
+            let item_edible = provides_food.get(use_item.item);
+            match item_edible {
+                None => {}
+                Some(_) => {
+                    used_item = true;
+                    let target = targets[0];
+                    let hc = hunger_clock.get_mut(target);
+                    if let Some(hc) = hc {
+                        hc.state = HungerState::WellFed;
+                        hc.duration = 20;
+                        gamelog.entries.push(format!(
+                            "You eat some {}.",
+                            names.get(use_item.item).unwrap().name
+                        ));
+                    }
+                }
+            }
+
             let item_equippable = equippable.get(use_item.item);
             match item_equippable {
                 None => {}
@@ -278,6 +304,18 @@ impl<'a> System<'a> for ItemUseSystem {
                             used_item = true;
                         }
                     }
+                }
+            }
+
+            let is_revealer = reveals_map.get(use_item.item);
+            match is_revealer {
+                None => {}
+                Some(_) => {
+                    used_item = true;
+                    gamelog
+                        .entries
+                        .push("You realize you don't need eyes to see here.".to_string());
+                    *runstate = RunState::RevealingMap { row: 0 };
                 }
             }
 
